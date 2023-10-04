@@ -102,15 +102,8 @@ int main(int argc, char *argv[]) {
 			}
 		} else if (v[1] == "PUBLISH") {
 			// if (num arguments != expected) -> explain usage, else proceed with publish
-		} else if (v[1] == "SEARCH") {
-			// if (num arguments != expected) -> explain usage, else proceed with search
-		} else if (v[1] == "EXIT") {
-			// exit my guy, close connection properly (!!! don't just return 0; !!!)
-		} else {
-			cout << "Improper input, try again" << endl;
-		}
 
-		/*A PUBLISH request includes a 1 B field containing 1 (Action equals 1), a 4 B file count, and a list of
+/*A PUBLISH request includes a 1 B field containing 1 (Action equals 1), a 4 B file count, and a list of
 NULL-terminated file names. The PUBLISH request must contain Count file names in total with exactly
 Count NULL characters. Count must be in network byte order. You may assume each filename is at most
 100 B (including NULL). No unused bytes are allowed between file names. A PUBLISH request will be no
@@ -118,6 +111,36 @@ larger than 1200 B.
 For example, if a peer PUBLISHed the two files ”a.txt” and ”B.pdf” then the raw PUBLISH request
 would be:
 0x01 0x00 0x00 0x00 0x02 0x61 0x2e 0x74 0x78 0x74 0x00 0x42 0x2e 0x70 0x64 0x66 0x00*/
+
+			// No damn clue how that works
+
+		} else if (v[1] == "SEARCH") {
+			// if (num arguments != expected) -> explain usage, else proceed with search
+
+/*A SEARCH request includes a 1 B field containing 2 (Action equals 2) and a variable length,
+NULL-terminated file name.
+
+For example, if a peer SEARCHed for the file ”me.png” then the raw SEARCH request would be:
+0x02 0x6d 0x65 0x2e 0x70 0x6e 0x67 0x00
+
+A SEARCH response (sent from registry to peer) has the format:
+  4 B   |        4 B        |       2 B
+Peer ID | Peer IPv4 Address | Peer Port Number
+
+A SEARCH response includes the ID, IPv4 address, and port number of the peer that has the requested
+file. All fields are in network byte order. If the registry is unable to locate the file, then all SEARCH response
+fields will contain zero. The registry will not return the info of the peer that sent the SEARCH request.
+For example, if the registry found the requested file at peer 17, which uses the IPv4 address 155.13.30.80
+at port 4020, then the raw SEARCH response would be:
+0x00 0x00 0x00 0x11 0x9b 0x0d 0x1e 0x50 0x0f 0xb4*/
+		} else if (v[1] == "EXIT") {
+			close(s);
+			return 0;
+		} else {
+			cout << "Improper input, try again" << endl;
+		}
+
+		
 	}
 	
 
