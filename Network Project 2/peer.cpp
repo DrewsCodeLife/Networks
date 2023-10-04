@@ -22,6 +22,9 @@
 #include <unistd.h>
 #include <iostream>
 #include <algorithm>
+#include <arpa/inet.h>
+#include <vector>
+#include <bits/stdc++.h>
 
 /*
  * Lookup a host IP address and connect to it using service. Arguments match the first two
@@ -34,28 +37,96 @@ int lookup_and_connect( const char *host, const char *service );
 
 int main(int argc, char *argv[]) {
 	int s;
-	int num,tot = 0;
-	int chunksize = 0;
 	char buf[2048];
-	const char *host = "www.ecst.csuchico.edu";
-	const char *port = "80";
+	bool quit = false;
 	char strang[] = "GET /~kkredo/file.html HTTP/1.0\r\n\r\n";
+
+	//argv[1] = registry address/hostname || argv[2] = port || argv[3] = Peer ID
 
 	if(errno != 0) {
 		errno=0;
 	}
 
-	if (argc < 2) {
-		std::cout << stderr << " Please provide a valid chunk size" << std::endl;
-	} else {
-		chunksize = std::atoi(argv[1]);
+	if (argc < 4) {
+		cout << "Usage: peer <address> <port #>, <peer ID>" << endl;;
+		exit(-);
 	}
+	const char *host = argv[1];
+	const char *port = argv[2];
+	short int   id = stoi(argv[3]);
 
-	/* Lookup IP and connect to server */
-	if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
-		exit( 1 );
+	while (quit == false) {
+		string choice;
+		string store;
+
+		/* Lookup IP and connect to server */
+		if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
+			cout << "Connection failed" << endl;
+			exit( 1 );
+		}
+
+		// if (JOIN) -> check length, htons(), assign joinRequest, send request
+
+		// ADD SOME SORT OF CLARIFICATION ON INPUT ARGUMENTS (JOIN <peer ID> = .....)
+		cout << "Please provide input:" << endl << "JOIN = connect to p2p network" << endl;
+		cout << "Publish = push data to p2p network" << "SEARCH = search p2p network for some"
+		cin >> choice;
+		stringstream ss(choice);
+		vector(string) v;
+
+		while(getline(ss, store, " ")) {
+			v.push_back(store); // first element will be command, subsequent elements will be arguments.
+							   // for each command, we must check that the length of the vector matches
+							   // the quantity expected.
+		}
+
+		if (v[1] == "JOIN") {
+			if (v.size() != 2) {
+				cout << "Improper quantity of arguments" << endl << "Expected: PEER <peer ID>" << endl;
+			} else {
+				// Proceed with JOIN request
+				if(id < 0 | id > 15) {
+					cout << "Peer ID must be 4 bit (0-15)" << endl;
+				}
+		
+				id = htons(id);
+				unsigned char joinRequest = (0 << 4)  | id; // uns char used to represent binary
+				// "assign bit 1 = 0, then push 0 four bits to the left (00000)
+				// OR that binary string with peer ID"
+
+				if (send(s, &joinRequest, sizeof(joinRequest), 0) == -1) {
+					perror("send");
+					close(s);
+					exit(1);
+				}
+			}
+		} else if (v[1] == "PUBLISH") {
+			// if (num arguments != expected) -> explain usage, else proceed with publish
+		} else if (v[1] == "SEARCH") {
+			// if (num arguments != expected) -> explain usage, else proceed with search
+		} else if (v[1] == "EXIT") {
+			// exit my guy, close connection properly (!!! don't just return 0; !!!)
+		} else {
+			cout << "Improper input, try again" << endl;
+		}
+
+		/*A PUBLISH request includes a 1 B field containing 1 (Action equals 1), a 4 B file count, and a list of
+NULL-terminated file names. The PUBLISH request must contain Count file names in total with exactly
+Count NULL characters. Count must be in network byte order. You may assume each filename is at most
+100 B (including NULL). No unused bytes are allowed between file names. A PUBLISH request will be no
+larger than 1200 B.
+For example, if a peer PUBLISHed the two files ”a.txt” and ”B.pdf” then the raw PUBLISH request
+would be:
+0x01 0x00 0x00 0x00 0x02 0x61 0x2e 0x74 0x78 0x74 0x00 0x42 0x2e 0x70 0x64 0x66 0x00*/
 	}
+	
 
+
+
+
+
+
+	/*
 	send(s, strang, sizeof(strang), 0); /* CHECK FOR ERRORS HERE */
 	if (errno != 0) {
 		printf("Some error occured while sending data request\n");
@@ -92,7 +163,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("Number of <p> tags: %i \n", occurrences);
-	printf("Number of bytes:    %d \n", tot);
+	printf("Number of bytes:    %d \n", tot); */
 
 	close( s );
 
