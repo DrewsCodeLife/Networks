@@ -62,8 +62,6 @@ int main(int argc, char *argv[]) {
 			exit( 1 );
 		}
 
-		// if (JOIN) -> check length, htons(), assign joinRequest, send request
-
 		cout << "Please enter a command (press h for commands): ";
 		cin >> choice;
 
@@ -77,7 +75,21 @@ int main(int argc, char *argv[]) {
 			string joinRequest = "00000001" + bitset<32>(ID).to_string();
 			cout << joinRequest << endl;
 			const char* request[joinRequest.length()] = {joinRequest.c_str()};
-			cout << request << endl;
+			for (unsigned int i = 0; i < joinRequest.length(); i++) {
+				cout << request[i];
+			}
+			cout << endl;
+
+			if (send(s, request, 5, 0) == 5) {
+				if (errno != 0) {
+					cout << "Send error: " << errno << endl;
+					perror("JOIN: ");
+				} else {
+					cout << "Join Successful" << endl;
+				}
+			}
+			
+			
 
 		} else if (choice == "PUBLISH") {
 			// publish stuff
