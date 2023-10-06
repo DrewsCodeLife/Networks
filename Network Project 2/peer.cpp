@@ -24,7 +24,10 @@
 #include <algorithm>
 #include <arpa/inet.h>
 #include <vector>
+#include <bitset>
 #include <bits/stdc++.h>
+
+using namespace std;
 
 /*
  * Lookup a host IP address and connect to it using service. Arguments match the first two
@@ -38,24 +41,18 @@ int lookup_and_connect( const char *host, const char *service );
 int main(int argc, char *argv[]) {
 	int s;
 	char buf[2048];
-	bool quit = false;
 	char strang[] = "GET /~kkredo/file.html HTTP/1.0\r\n\r\n";
-
-	//argv[1] = registry address/hostname || argv[2] = port || argv[3] = Peer ID
-
-	if(errno != 0) {
-		errno=0;
-	}
 
 	if (argc < 4) {
 		cout << "Usage: peer <address> <port #>, <peer ID>" << endl;;
-		exit(-);
+		exit(-1);
 	}
+	//argv[1] = registry address/hostname || argv[2] = port || argv[3] = Peer ID
 	const char *host = argv[1];
 	const char *port = argv[2];
-	short int   id = stoi(argv[3]);
+	int   		  id = atoi(argv[3]);
 
-	while (quit == false) {
+	while (1) {
 		string choice;
 		string store;
 
@@ -67,29 +64,37 @@ int main(int argc, char *argv[]) {
 
 		// if (JOIN) -> check length, htons(), assign joinRequest, send request
 
-		// ADD SOME SORT OF CLARIFICATION ON INPUT ARGUMENTS (JOIN <peer ID> = .....)
-		cout << "Please provide input:" << endl << "JOIN = connect to p2p network" << endl;
-		cout << "Publish = push data to p2p network" << "SEARCH = search p2p network for some"
+		cout << "Please enter a command (press h for commands): ";
 		cin >> choice;
-		stringstream ss(choice);
-		vector(string) v;
 
-		while(getline(ss, store, " ")) {
-			v.push_back(store); // first element will be command, subsequent elements will be arguments.
-							   // for each command, we must check that the length of the vector matches
-							   // the quantity expected.
+		if (choice == "EXIT") {
+			break;
+		} else if (choice == "h") {
+			cout << endl << "JOIN = Connect to P2P network" << endl << "PUBLISH = Push SharedFiles to registry" << endl;
+			cout << "SEARCH = Find a peer who has 'x' file" << endl << "EXIT = Shutdown connection" << endl;
+		} else if (choice == "JOIN") {
+			int ID = htonl(id);
+			string joinRequest = "00000001" + bitset<32>(ID).to_string();
+			cout << joinRequest << endl;
+			const char* request[joinRequest.length()] = {joinRequest.c_str()};
+			cout << request << endl;
+
+		} else if (choice == "PUBLISH") {
+			// publish stuff
+		} else if (choice == "SEARCH") {
+			// search stuff
+		} else {
+			cout << "Input invalid, try again" << endl;
 		}
 
+/*
 		if (v[1] == "JOIN") {
 			if (v.size() != 2) {
-				cout << "Improper quantity of arguments" << endl << "Expected: PEER <peer ID>" << endl;
+				cout << "Improper quantity of arguments" << endl << "Expected: JOIN <peer ID>" << endl;
 			} else {
 				// Proceed with JOIN request
-				if(id < 0 | id > 15) {
-					cout << "Peer ID must be 4 bit (0-15)" << endl;
-				}
 		
-				id = htons(id);
+				id = htonl(id);
 				unsigned char joinRequest = (0 << 4)  | id; // uns char used to represent binary
 				// "assign bit 1 = 0, then push 0 four bits to the left (00000)
 				// OR that binary string with peer ID"
@@ -103,21 +108,21 @@ int main(int argc, char *argv[]) {
 		} else if (v[1] == "PUBLISH") {
 			// if (num arguments != expected) -> explain usage, else proceed with publish
 
-/*A PUBLISH request includes a 1 B field containing 1 (Action equals 1), a 4 B file count, and a list of
+A PUBLISH request includes a 1 B field containing 1 (Action equals 1), a 4 B file count, and a list of
 NULL-terminated file names. The PUBLISH request must contain Count file names in total with exactly
 Count NULL characters. Count must be in network byte order. You may assume each filename is at most
 100 B (including NULL). No unused bytes are allowed between file names. A PUBLISH request will be no
 larger than 1200 B.
 For example, if a peer PUBLISHed the two files ”a.txt” and ”B.pdf” then the raw PUBLISH request
 would be:
-0x01 0x00 0x00 0x00 0x02 0x61 0x2e 0x74 0x78 0x74 0x00 0x42 0x2e 0x70 0x64 0x66 0x00*/
+0x01 0x00 0x00 0x00 0x02 0x61 0x2e 0x74 0x78 0x74 0x00 0x42 0x2e 0x70 0x64 0x66 0x00
 
 			// No damn clue how that works
 
 		} else if (v[1] == "SEARCH") {
 			// if (num arguments != expected) -> explain usage, else proceed with search
 
-/*A SEARCH request includes a 1 B field containing 2 (Action equals 2) and a variable length,
+A SEARCH request includes a 1 B field containing 2 (Action equals 2) and a variable length,
 NULL-terminated file name.
 
 For example, if a peer SEARCHed for the file ”me.png” then the raw SEARCH request would be:
@@ -132,7 +137,7 @@ file. All fields are in network byte order. If the registry is unable to locate 
 fields will contain zero. The registry will not return the info of the peer that sent the SEARCH request.
 For example, if the registry found the requested file at peer 17, which uses the IPv4 address 155.13.30.80
 at port 4020, then the raw SEARCH response would be:
-0x00 0x00 0x00 0x11 0x9b 0x0d 0x1e 0x50 0x0f 0xb4*/
+0x00 0x00 0x00 0x11 0x9b 0x0d 0x1e 0x50 0x0f 0xb4
 		} else if (v[1] == "EXIT") {
 			close(s);
 			return 0;
@@ -140,7 +145,7 @@ at port 4020, then the raw SEARCH response would be:
 			cout << "Improper input, try again" << endl;
 		}
 
-		
+		*/
 	}
 	
 
@@ -150,7 +155,6 @@ at port 4020, then the raw SEARCH response would be:
 
 
 	/*
-	send(s, strang, sizeof(strang), 0); /* CHECK FOR ERRORS HERE */
 	if (errno != 0) {
 		printf("Some error occured while sending data request\n");
 		return -1;
@@ -170,7 +174,7 @@ at port 4020, then the raw SEARCH response would be:
 		
    		std::string::size_type pos = 0;
    		std::string target = "<p>";
-   		while ((pos = data.find(target, pos )) != std::string::npos) { /* CHECK FOR ERRORS*/
+   		while ((pos = data.find(target, pos )) != std::string::npos) {
    		       ++ occurrences;
    		       pos += target.length();
    		}
