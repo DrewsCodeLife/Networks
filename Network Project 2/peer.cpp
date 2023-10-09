@@ -26,6 +26,8 @@
 #include <vector>
 #include <bitset>
 #include <bits/stdc++.h>
+#include <fstream>
+#include <dirent.h>
 
 using namespace std;
 
@@ -40,8 +42,10 @@ int lookup_and_connect( const char *host, const char *service );
 
 int main(int argc, char *argv[]) {
 	int s;
+	const char* sharedFileDir = "SharedFiles";
 	char buf[2048];
 	char strang[] = "GET /~kkredo/file.html HTTP/1.0\r\n\r\n";
+	vector<string> fileNames;
 
 	if (argc < 4) {
 		cout << "Usage: peer <address> <port #>, <peer ID>" << endl;;
@@ -88,124 +92,67 @@ int main(int argc, char *argv[]) {
 					cout << "Join Successful" << endl;
 				}
 			}
-			
-			
 
 		} else if (choice == "PUBLISH") {
-			// publish stuff
+			// Submit a publish request
+			// ALL FILES ARE IN "SharedFiles" folder, must publish all available files in first shot
+			
+			// Send buffer in form of:
+			// |ACTION | FILE COUNT, MUST EQUAL NULL COUNT   | NULL TERMINATED FILE NAME(S)
+			// |-------|-------------------------------------|----------------------------
+			// |   1   | 00000000 00000000 00000000 00000000 | xxxxxxxx (less than 100 bytes per filename,
+			//                                                                 less than 1200 bytes total)
+
+			DIR* dir = sharedFileDir; // Open the directory containing the files to be published
+
+			if (dir) { // if successful, proceed with publish
+				struct dirent* entry;
+				while((entry = readdir(dir)) != NULL) { // readdir returns a pointer to essentially a file
+														// descriptor, if NULL, then end of directory
+					if (entry->d_type == DT_REG) { // if the file is of regular type, then:
+						fileNames.push_back(entry->d_name); // Add the file name from to the back of the vector
+					}
+				}
+				closedir(dir);
+			} else{
+				cerr << "Error opening directory for publish" << endl;
+				exit(-1);
+			}
+
+			uint32_t fileCount = htonl(static_cast<uint32_t>(fileNames.size()));
+			// Creates fileCount, ensures that bytes are in network order
+			
+			vector<char> publishRequest;
+			publishRequest.push_back(0x01); // Throw a 0x01 descriptor at the front to say action = 1
+			publishRequest.insert(
+				publishRequest.end(),
+				reinterpret_cast<const char*>(&fileCount),
+				reinterpret_cast<const char*>(&fileCount) + sizeof(fileCount)
+			); // Carefully inserts the file count data at the end of the publish request
+
+			for (const string& fileName : fileNames) {
+				publishRequest.insert(publishRequest.end(), fileName.c_str(), fileName.c_str() + fileName.size() +1);
+			} // Again, inserts the file *NAME* data at the end of the publish request
+			
+			char* sentData = publishRequest.data();
+			size_t sendSize = publishRequest.size();
+
+			size_t sentSize = send(s, sentData, sendSize, 0);
+
+			if (sentSize != sendSize) {
+				cerr << "Sent size != Intended send size, please assure data has sent properly" << endl;
+			} else {
+				cout << "Sent: " << sentSize << " bytes of data" << endl;
+			}
+
 		} else if (choice == "SEARCH") {
 			// search stuff
 		} else {
 			cout << "Input invalid, try again" << endl;
 		}
-
-/*
-		if (v[1] == "JOIN") {
-			if (v.size() != 2) {
-				cout << "Improper quantity of arguments" << endl << "Expected: JOIN <peer ID>" << endl;
-			} else {
-				// Proceed with JOIN request
-		
-				id = htonl(id);
-				unsigned char joinRequest = (0 << 4)  | id; // uns char used to represent binary
-				// "assign bit 1 = 0, then push 0 four bits to the left (00000)
-				// OR that binary string with peer ID"
-
-				if (send(s, &joinRequest, sizeof(joinRequest), 0) == -1) {
-					perror("send");
-					close(s);
-					exit(1);
-				}
-			}
-		} else if (v[1] == "PUBLISH") {
-			// if (num arguments != expected) -> explain usage, else proceed with publish
-
-A PUBLISH request includes a 1 B field containing 1 (Action equals 1), a 4 B file count, and a list of
-NULL-terminated file names. The PUBLISH request must contain Count file names in total with exactly
-Count NULL characters. Count must be in network byte order. You may assume each filename is at most
-100 B (including NULL). No unused bytes are allowed between file names. A PUBLISH request will be no
-larger than 1200 B.
-For example, if a peer PUBLISHed the two files ”a.txt” and ”B.pdf” then the raw PUBLISH request
-would be:
-0x01 0x00 0x00 0x00 0x02 0x61 0x2e 0x74 0x78 0x74 0x00 0x42 0x2e 0x70 0x64 0x66 0x00
-
-			// No damn clue how that works
-
-		} else if (v[1] == "SEARCH") {
-			// if (num arguments != expected) -> explain usage, else proceed with search
-
-A SEARCH request includes a 1 B field containing 2 (Action equals 2) and a variable length,
-NULL-terminated file name.
-
-For example, if a peer SEARCHed for the file ”me.png” then the raw SEARCH request would be:
-0x02 0x6d 0x65 0x2e 0x70 0x6e 0x67 0x00
-
-A SEARCH response (sent from registry to peer) has the format:
-  4 B   |        4 B        |       2 B
-Peer ID | Peer IPv4 Address | Peer Port Number
-
-A SEARCH response includes the ID, IPv4 address, and port number of the peer that has the requested
-file. All fields are in network byte order. If the registry is unable to locate the file, then all SEARCH response
-fields will contain zero. The registry will not return the info of the peer that sent the SEARCH request.
-For example, if the registry found the requested file at peer 17, which uses the IPv4 address 155.13.30.80
-at port 4020, then the raw SEARCH response would be:
-0x00 0x00 0x00 0x11 0x9b 0x0d 0x1e 0x50 0x0f 0xb4
-		} else if (v[1] == "EXIT") {
-			close(s);
-			return 0;
-		} else {
-			cout << "Improper input, try again" << endl;
-		}
-
-		*/
 	}
-	
-
-
-
-
-
-
-	/*
-	if (errno != 0) {
-		printf("Some error occured while sending data request\n");
-		return -1;
-	}
-
-	int occurrences = 0;
-	bool errsv = false;
-	std::string data;
-	while (num > 0) {
-		num = recv(s, buf, chunksize, 0);
-		tot = tot + num;
-		data = buf;
-		
-		if (num < 0) {
-			errsv = true;
-		}
-		
-   		std::string::size_type pos = 0;
-   		std::string target = "<p>";
-   		while ((pos = data.find(target, pos )) != std::string::npos) {
-   		       ++ occurrences;
-   		       pos += target.length();
-   		}
-		if (errno != 0) {
-			printf("Some error occured while parsing the data\n");
-			return -1;
-		}
-	}
-
-	if (errsv == true) {
-		printf("Some error occured while recieving the data, please try again.\n");
-		return -1;
-	}
-
-	printf("Number of <p> tags: %i \n", occurrences);
-	printf("Number of bytes:    %d \n", tot); */
 
 	close( s );
-
 	return 0;
 }
 
