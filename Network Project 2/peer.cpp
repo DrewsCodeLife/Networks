@@ -1,16 +1,17 @@
-/* This code is an updated version of the sample code from "Computer Networks: A Systems
- * Approach," 5th Edition by Larry L. Peterson and Bruce S. Davis. Some code comes from
- * man pages, mostly getaddrinfo(3). */
+/* This code is a heavily modified version of the sample code from "Computer Networks: A Systems
+ * Approach," 5th Edition by Larry L. Peterson and Bruce S. Davis. Code sources from a variety of places,
+ * largely cplusplus.com and stack overflow */
 
 // Developers	 : Drew L Mortenson, Christopher M Claire
 // Class info	 : 2238-EECE-446-01-2992
 // Semester		 : Fall 2023
-// Functionality : This program will connect to the server defined in *host and *port, then send the request
-//				        specified in 'strang'. It will then recieve all data sent by the aforementioned server
-//				        and count the <p> tags as well as the total bytes received. Christopher and Drew have
-//						added functionality to receive the data, as well as to count the <p> tags and bytes.
-//						In addition, they have added the functionality to receive a command line argument
-//						specifying the desired chunk size for packets.
+// Functionality : This program connects to a P2P network which is hosted by the Jaguar ecc-linux server at
+//				   		Chico State University. The program initializes a socket connection without request,
+//				        but does not proceed with a JOIN request until the user requests it to be performed.
+//						Similarly, the program is capable of publishing it's own files to the registry, and
+//						searching the registry for other files of 'x' name. The program waits for user input
+//						at each step and will not proceed with any actions (beyond socket connection) until
+//                      the user requests it.
 
 
 #include <stdio.h>
@@ -44,7 +45,6 @@ int main(int argc, char *argv[]) {
 	int s;
 	const char* sharedFileDir = "SharedFiles";
 	char buf[2048];
-	char strang[] = "GET /~kkredo/file.html HTTP/1.0\r\n\r\n";
 	vector<string> fileNames;
 
 	if (argc < 4) {
@@ -94,15 +94,6 @@ int main(int argc, char *argv[]) {
 			}
 
 		} else if (choice == "PUBLISH") {
-			// Submit a publish request
-			// ALL FILES ARE IN "SharedFiles" folder, must publish all available files in first shot
-			
-			// Send buffer in form of:
-			// |ACTION | FILE COUNT, MUST EQUAL NULL COUNT   | NULL TERMINATED FILE NAME(S)
-			// |-------|-------------------------------------|----------------------------
-			// |   1   | 00000000 00000000 00000000 00000000 | xxxxxxxx (less than 100 bytes per filename,
-			//                                                                 less than 1200 bytes total)
-
 			DIR* dir = sharedFileDir; // Open the directory containing the files to be published
 
 			if (dir) { // if successful, proceed with publish
@@ -133,6 +124,9 @@ int main(int argc, char *argv[]) {
 			for (const string& fileName : fileNames) {
 				publishRequest.insert(publishRequest.end(), fileName.c_str(), fileName.c_str() + fileName.size() +1);
 			} // Again, inserts the file *NAME* data at the end of the publish request
+
+			// Since we inserted the file count data prior to the file name data, all bytes and data should
+			//		 be properly ordered.
 			
 			char* sentData = publishRequest.data();
 			size_t sendSize = publishRequest.size();
@@ -140,13 +134,16 @@ int main(int argc, char *argv[]) {
 			size_t sentSize = send(s, sentData, sendSize, 0);
 
 			if (sentSize != sendSize) {
+				// if this statement is 'true' then check wireshark to ensure that data sent.
+				// if the data sent properly, replace "sentSize != sendSize" with "sentSize < 0"
 				cerr << "Sent size != Intended send size, please assure data has sent properly" << endl;
 			} else {
 				cout << "Sent: " << sentSize << " bytes of data" << endl;
 			}
 
 		} else if (choice == "SEARCH") {
-			// search stuff
+			vector<char> searchRequest;
+			
 		} else {
 			cout << "Input invalid, try again" << endl;
 		}
