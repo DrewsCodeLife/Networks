@@ -76,13 +76,17 @@ int main(int argc, char *argv[]) {
 			cout << "SEARCH = Find a peer who has 'x' file" << endl << "EXIT = Shutdown connection" << endl;
 		} else if (choice == "JOIN") {
 			int ID = htonl(id);
-			string joinRequest = "\x00" + bitset<32>(ID).to_string();
-			cout << joinRequest << endl;
-			const char* request[joinRequest.length()] = {joinRequest.c_str()};
-			for (unsigned int i = 0; i < joinRequest.length(); i++) {
-				cout << request[i];
-			}
-			cout << endl;
+			uint8_t action = 0;
+			char request[40];
+			memcpy(request,&action,sizeof(action));
+			memcpy(request+sizeof(action),&ID,sizeof(ID));
+			// string joinRequest = "\x00" + bitset<32>(ID).to_string();
+			// cout << joinRequest << endl;
+			// const char* request[joinRequest.length()] = {joinRequest.c_str()};
+			// for (unsigned int i = 0; i < joinRequest.length(); i++) {
+			// 	cout << request[i];
+			// }
+			// cout << endl;
 
 			int sent = send(s, request, 5, 0);
 				if (errno != 0) {
