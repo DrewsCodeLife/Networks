@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 			cout << "SEARCH = Find a peer who has 'x' file" << endl << "EXIT = Shutdown connection" << endl;
 		} else if (choice == "JOIN") {
 			int ID = htonl(id);
-			string joinRequest = "00000001" + bitset<32>(ID).to_string();
+			string joinRequest = "\x00" + bitset<32>(ID).to_string();
 			cout << joinRequest << endl;
 			const char* request[joinRequest.length()] = {joinRequest.c_str()};
 			for (unsigned int i = 0; i < joinRequest.length(); i++) {
@@ -84,12 +84,14 @@ int main(int argc, char *argv[]) {
 			}
 			cout << endl;
 
-			if (send(s, request, 5, 0) == 5) {
+			int sent = send(s, request, 5, 0);
 				if (errno != 0) {
 					cout << "Send error: " << errno << endl;
 					perror("JOIN: ");
-				} else {
+				} else if (sent == 5) {
 					cout << "Join Successful" << endl;
+				} else {
+					cout << "Join Success, incorrect data sent" << endl;
 				}
 			}
 
