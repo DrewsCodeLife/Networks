@@ -93,7 +93,6 @@ int main(int argc, char *argv[]) {
 				} else {
 					cout << "Join Success, incorrect data sent" << endl;
 				}
-			}
 
 		} else if (choice == "PUBLISH") {
 			DIR* dir = opendir(sharedFileDir); // Open the directory containing the files to be published
