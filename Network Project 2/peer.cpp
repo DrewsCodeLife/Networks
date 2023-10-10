@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 			}
 
 		} else if (choice == "PUBLISH") {
-			DIR* dir = sharedFileDir; // Open the directory containing the files to be published
+			DIR* dir = opendir(sharedFileDir); // Open the directory containing the files to be published
 
 			if (dir) { // if successful, proceed with publish
 				struct dirent* entry;
@@ -137,13 +137,63 @@ int main(int argc, char *argv[]) {
 				// if this statement is 'true' then check wireshark to ensure that data sent.
 				// if the data sent properly, replace "sentSize != sendSize" with "sentSize < 0"
 				cerr << "Sent size != Intended send size, please assure data has sent properly" << endl;
+				cerr << "Sent size: " << sentSize << endl;
+				cerr << "Expected : " << sendSize << endl;
 			} else {
 				cout << "Sent: " << sentSize << " bytes of data" << endl;
 			}
 
 		} else if (choice == "SEARCH") {
 			vector<char> searchRequest;
-			
+			string fileName;
+
+			cout << "Enter a file name: ";
+			cin  >> fileName;
+
+			searchRequest.push_back(0x02); // Add action byte to "front" of request
+
+			for (char c : fileName) { // for c = first char in fileName to the last char,
+				searchRequest.push_back(c); // add the char to the back of the request
+			}
+
+			searchRequest.push_back(0x00);
+
+			char* sentData = searchRequest.data();
+			size_t sendSize = searchRequest.size();
+
+			size_t sentSize = send(s, sentData, sendSize, 0);
+
+			if (sentSize != sendSize) {
+				cerr << "Sent size != intended send size, please assure data has sent properly" << endl;
+				cerr << "Sent size: " << sentSize << endl;
+				cerr << "Expected : " << sendSize << endl;
+			} else {
+				cout << "Sent: " << sentSize << " bytes of data" << endl;
+			}
+
+			vector<char> searchResponse;
+			while(int count = recv(s, buf, sizeof(buf), 0) > 0) {
+				searchResponse.insert(searchResponse.end(), buf, buf + count);
+				memset(buf, 0, sizeof(buf));
+			}
+
+			uint32_t peerID;
+			uint32_t peerIP;
+			uint16_t peerPort;
+			memcpy(&peerID, &searchResponse[0], sizeof(peerID));
+			memcpy(&peerIP, &searchResponse[4], sizeof(peerIP));
+			memcpy(&peerPort, &searchResponse[8], sizeof(peerPort));
+			peerID = ntohl(peerID);
+			peerIP = ntohl(peerIP);
+			peerPort = ntohl(peerPort);
+
+			if ((peerID == 0) & (peerIP == 0) & (peerPort == 0)) {
+				cout << "File not indexed by registry" << endl;
+			} else {
+				cout << "file cound at" << endl;
+				cout << " Peer " << peerID << endl;
+				cout << peerIP << ":" << peerPort << endl;
+			}
 		} else {
 			cout << "Input invalid, try again" << endl;
 		}
