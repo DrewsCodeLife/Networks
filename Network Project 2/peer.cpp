@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
 			if ((peerID == 0) & (peerIP == 0) & (peerPort == 0)) {
 				cout << "File not indexed by registry" << endl;
 			} else {
-				cout << "file cound at" << endl;
+				cout << "file found at" << endl;
 				cout << " Peer " << peerID << endl;
 				cout << peerIP << ":" << peerPort << endl;
 			}
