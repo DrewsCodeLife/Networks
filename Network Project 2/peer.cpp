@@ -7,11 +7,11 @@
 // Semester		 : Fall 2023
 // Functionality : This program connects to a P2P network which is hosted by the Jaguar ecc-linux server at
 //				   		Chico State University. The program initializes a socket connection without request,
-//				        but does not proceed with a JOIN request until the user requests it to be performed.
+//				                but does not proceed with a JOIN request until the user requests it to be performed.
 //						Similarly, the program is capable of publishing it's own files to the registry, and
 //						searching the registry for other files of 'x' name. The program waits for user input
 //						at each step and will not proceed with any actions (beyond socket connection) until
-//                      the user requests it.
+//                                              the user requests it.
 
 
 #include <stdio.h>
