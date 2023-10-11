@@ -174,19 +174,14 @@ int main(int argc, char *argv[]) {
 			} else {
 				cout << "Sent: " << sentSize << " bytes of data" << endl;
 			}
-
-			vector<char> searchResponse;
-			while(int count = recv(s, buf, sizeof(buf), 0) > 0) {
-				searchResponse.insert(searchResponse.end(), buf, buf + count);
-				memset(buf, 0, sizeof(buf));
-			}
+			recv(s, buf, sizeof(buf), 0);
 
 			uint32_t peerID;
 			uint32_t peerIP;
 			uint16_t peerPort;
-			memcpy(&peerID, &searchResponse[0], sizeof(peerID));
-			memcpy(&peerIP, &searchResponse[4], sizeof(peerIP));
-			memcpy(&peerPort, &searchResponse[8], sizeof(peerPort));
+			memcpy(&peerID, &buf[0], sizeof(peerID));
+			memcpy(&peerIP, &buf[4], sizeof(peerIP));
+			memcpy(&peerPort, &buf[8], sizeof(peerPort));
 			peerID = ntohl(peerID);
 			peerIP = ntohl(peerIP);
 			peerPort = ntohl(peerPort);
