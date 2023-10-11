@@ -56,15 +56,14 @@ int main(int argc, char *argv[]) {
 	const char *port = argv[2];
 	int   		  id = atoi(argv[3]);
 
+	/* Lookup IP and connect to server */
+	if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
+		cout << "Connection failed" << endl;
+		exit( 1 );
+	}
+
 	while (1) {
 		string choice;
-		string store;
-
-		/* Lookup IP and connect to server */
-		if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
-			cout << "Connection failed" << endl;
-			exit( 1 );
-		}
 
 		cout << "Please enter a command (press h for commands): ";
 		cin >> choice;
