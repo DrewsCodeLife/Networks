@@ -179,19 +179,25 @@ int main(int argc, char *argv[]) {
 			uint32_t peerID;
 			uint32_t peerIP;
 			uint16_t peerPort;
-			memcpy(&peerID, &buf[0], sizeof(peerID));
-			memcpy(&peerIP, &buf[4], sizeof(peerIP));
-			memcpy(&peerPort, &buf[8], sizeof(peerPort));
+			char pIP[INET_ADDRSTRLEN]; // char array of size IPV4
+			memcpy(&peerID, &buf[0], 4);
+			memcpy(&peerIP, &buf[4], 4);
+			memcpy(&peerPort, &buf[8], 2);
 			peerID = ntohl(peerID);
-			peerIP = ntohl(peerIP);
+			inet_ntop(AF_INET, &peerIP, pIP, INET_ADDRSTRLEN);
 			peerPort = ntohl(peerPort);
 
-			if ((peerID == 0) & (peerIP == 0) & (peerPort == 0)) {
+			if ((peerID == 0) & (peerPort == 0) & 
+				(pIP[0] == 0) & (pIP[1] == 0) &
+				(pIP[2] == 0) & (pIP[3] == 0) ) {
 				cout << "File not indexed by registry" << endl;
 			} else {
 				cout << "file found at" << endl;
-				cout << " Peer " << peerID << endl;
-				cout << peerIP << ":" << peerPort << endl;
+				cout << " Peer " << peerID << endl << " ";
+				for(int i = 0; i < INET_ADDRSTRLEN; i++) {
+					cout << pIP[i];
+				}
+				cout <<  ":" << peerPort << endl;
 			}
 		} else {
 			cout << "Input invalid, try again" << endl;
