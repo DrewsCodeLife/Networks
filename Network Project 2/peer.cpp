@@ -7,11 +7,11 @@
 // Semester		 : Fall 2023
 // Functionality : This program connects to a P2P network which is hosted by the Jaguar ecc-linux server at
 //				   		Chico State University. The program initializes a socket connection without request,
-//				                but does not proceed with a JOIN request until the user requests it to be performed.
+//				        but does not proceed with a JOIN request until the user requests it to be performed.
 //						Similarly, the program is capable of publishing it's own files to the registry, and
 //						searching the registry for other files of 'x' name. The program waits for user input
 //						at each step and will not proceed with any actions (beyond socket connection) until
-//                                              the user requests it.
+//                      the user requests it.
 
 
 #include <stdio.h>
@@ -179,13 +179,18 @@ int main(int argc, char *argv[]) {
 			uint32_t peerID;
 			uint32_t peerIP;
 			uint16_t peerPort;
-			char pIP[INET_ADDRSTRLEN]; // char array of size IPV4
+			char pIP[INET_ADDRSTRLEN];  // char array of size IPV4
+			for (int i = 0; i < INET_ADDRSTRLEN; i++) {
+				pIP[i] = 0;
+			}
 			memcpy(&peerID, &buf[0], 4);
 			memcpy(&peerIP, &buf[4], 4);
 			memcpy(&peerPort, &buf[8], 2);
 			peerID = ntohl(peerID);
-			inet_ntop(AF_INET, &peerIP, pIP, INET_ADDRSTRLEN);
 			peerPort = ntohl(peerPort);
+			inet_ntop(AF_INET, &peerIP, pIP, INET_ADDRSTRLEN);
+			
+			cout << endl << "Peerport: " << peerPort << endl;
 
 			if ((peerID == 0) & (peerPort == 0) & 
 				(pIP[0] == 0) & (pIP[1] == 0) &
