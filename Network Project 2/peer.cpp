@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
 			memcpy(request,&action,sizeof(action));
 			memcpy(request+sizeof(action),&ID,sizeof(ID));
 			
+			errno = 0;
 			send(s, request, 5, 0);
 			if (errno != 0) {
 				cout << "Send error: " << errno << endl;
@@ -121,11 +122,14 @@ int main(int argc, char *argv[]) {
 			char* sentData = publishRequest.data();
 			size_t sendSize = publishRequest.size();
 
+			errno = 0;
 			size_t sentSize = send(s, sentData, sendSize, 0);
+			if (errno != 0) {
+				cout << "Publish error: " << errno << endl;
+				perror("JOIN: ");
+			}
 
 			if (sentSize != sendSize) {
-				// if this statement is 'true' then check wireshark to ensure that data sent.
-				// if the data sent properly, replace "sentSize != sendSize" with "sentSize < 0"
 				cerr << "Sent size != Intended send size, please assure data has sent properly" << endl;
 				cerr << "Sent size: " << sentSize << endl;
 				cerr << "Expected : " << sendSize << endl;
@@ -149,19 +153,29 @@ int main(int argc, char *argv[]) {
 			char* sentData = searchRequest.data();
 			size_t sendSize = searchRequest.size();
 
+			errno = 0;
 			size_t sentSize = send(s, sentData, sendSize, 0);
+			if (errno != 0) {
+				cout << "Search send error: " << errno << endl;
+				perror("SEARCH: ");
+			}
 
 			if (sentSize != sendSize) {
 				cerr << "Sent size != intended send size, please assure data has sent properly" << endl;
 				cerr << "Sent size: " << sentSize << endl;
 				cerr << "Expected : " << sendSize << endl;
 			}
+			errno = 0;
 			recv(s, buf, sizeof(buf), 0);
+			if (errno != 0) {
+				cout << "Search receive error: " << errno << endl;
+				perror("SEARCH: ");
+			}
 
 			uint32_t peerID;
 			uint32_t peerIP;
 			uint16_t peerPort;
-			char pIP[INET_ADDRSTRLEN];  // char array of size IPV4
+			char pIP[INET_ADDRSTRLEN];  // char array of size IPV4 address
 			for (int i = 0; i < INET_ADDRSTRLEN; i++) {
 				pIP[i] = 0;
 			}
@@ -172,9 +186,7 @@ int main(int argc, char *argv[]) {
 			peerPort = ntohs(peerPort);
 			inet_ntop(AF_INET, &peerIP, pIP, INET_ADDRSTRLEN);
 
-			if ((peerID == 0) & (peerPort == 0) & 
-				(pIP[0] == 0) & (pIP[1] == 0) &
-				(pIP[2] == 0) & (pIP[3] == 0) ) {
+			if ((peerID == 0) & (peerPort == 0)) {
 				cout << "File not indexed by registry" << endl;
 			} else {
 				cout << "file found at" << endl;
