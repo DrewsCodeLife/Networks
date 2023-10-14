@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
 			if (errno != 0) {
 				cout << "Send error: " << errno << endl;
 				perror("JOIN: ");
+			}
 			// } else if (sent == 5) {
 			// 	cout << "Join Successful" << endl;
 			// } else {
