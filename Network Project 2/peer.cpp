@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 			memcpy(request,&action,sizeof(action));
 			memcpy(request+sizeof(action),&ID,sizeof(ID));
 			
-			int sent = send(s, request, 5, 0);
+			send(s, request, 5, 0);
 			if (errno != 0) {
 				cout << "Send error: " << errno << endl;
 				perror("JOIN: ");
