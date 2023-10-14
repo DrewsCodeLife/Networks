@@ -65,14 +65,11 @@ int main(int argc, char *argv[]) {
 	while (1) {
 		string choice;
 
-		cout << "Please enter a command (press h for commands): ";
+		cout << "Enter a command: ";
 		cin >> choice;
 
 		if (choice == "EXIT") {
 			break;
-		} else if (choice == "h") {
-			cout << endl << "JOIN = Connect to P2P network" << endl << "PUBLISH = Push SharedFiles to registry" << endl;
-			cout << "SEARCH = Find a peer who has 'x' file" << endl << "EXIT = Shutdown connection" << endl;
 		} else if (choice == "JOIN") {
 			int ID = htonl(id);
 			uint8_t action = 0;
@@ -85,11 +82,6 @@ int main(int argc, char *argv[]) {
 				cout << "Send error: " << errno << endl;
 				perror("JOIN: ");
 			}
-			// } else if (sent == 5) {
-			// 	cout << "Join Successful" << endl;
-			// } else {
-			// 	cout << "Join Success, incorrect data sent" << endl;
-			// }
 
 		} else if (choice == "PUBLISH") {
 			DIR* dir = opendir(sharedFileDir); // Open the directory containing the files to be published
@@ -137,8 +129,6 @@ int main(int argc, char *argv[]) {
 				cerr << "Sent size != Intended send size, please assure data has sent properly" << endl;
 				cerr << "Sent size: " << sentSize << endl;
 				cerr << "Expected : " << sendSize << endl;
-			} else {
-				cout << "Sent: " << sentSize << " bytes of data" << endl;
 			}
 
 		} else if (choice == "SEARCH") {
@@ -165,8 +155,6 @@ int main(int argc, char *argv[]) {
 				cerr << "Sent size != intended send size, please assure data has sent properly" << endl;
 				cerr << "Sent size: " << sentSize << endl;
 				cerr << "Expected : " << sendSize << endl;
-			} else {
-				cout << "Sent: " << sentSize << " bytes of data" << endl;
 			}
 			recv(s, buf, sizeof(buf), 0);
 
@@ -197,7 +185,8 @@ int main(int argc, char *argv[]) {
 				cout <<  ":" << peerPort << endl;
 			}
 		} else {
-			cout << "Input invalid, try again" << endl;
+			cout << endl << "JOIN = Connect to P2P network" << endl << "PUBLISH = Push SharedFiles to registry" << endl;
+			cout << "SEARCH = Find a peer who has 'x' file" << endl << "EXIT = Shutdown connection" << endl << endl;
 		}
 	}
 
