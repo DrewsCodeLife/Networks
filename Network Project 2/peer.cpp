@@ -79,13 +79,6 @@ int main(int argc, char *argv[]) {
 			char request[40];
 			memcpy(request,&action,sizeof(action));
 			memcpy(request+sizeof(action),&ID,sizeof(ID));
-			// string joinRequest = "\x00" + bitset<32>(ID).to_string();
-			// cout << joinRequest << endl;
-			// const char* request[joinRequest.length()] = {joinRequest.c_str()};
-			// for (unsigned int i = 0; i < joinRequest.length(); i++) {
-			// 	cout << request[i];
-			// }
-			// cout << endl;
 
 			int sent = send(s, request, 5, 0);
 				if (errno != 0) {
@@ -187,10 +180,8 @@ int main(int argc, char *argv[]) {
 			memcpy(&peerIP, &buf[4], 4);
 			memcpy(&peerPort, &buf[8], 2);
 			peerID = ntohl(peerID);
-			peerPort = ntohl(peerPort);
+			peerPort = ntohs(peerPort);
 			inet_ntop(AF_INET, &peerIP, pIP, INET_ADDRSTRLEN);
-			
-			cout << endl << "Peerport: " << peerPort << endl;
 
 			if ((peerID == 0) & (peerPort == 0) & 
 				(pIP[0] == 0) & (pIP[1] == 0) &
