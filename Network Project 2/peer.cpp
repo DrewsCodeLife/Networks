@@ -1,6 +1,6 @@
 /* This code is a heavily modified version of the sample code from "Computer Networks: A Systems
- * Approach," 5th Edition by Larry L. Peterson and Bruce S. Davis. Code sources from a variety of places,
- * largely cplusplus.com and stack overflow */
+ * Approach," 5th Edition by Larry L. Peterson and Bruce S. Davis. Code comes from a variety of places,
+ * largely "Beej's guide to Network Programming", cplusplus.com and stack overflow */
 
 // Developers	 : Drew L Mortenson, Christopher M Claire
 // Class info	 : 2238-EECE-446-01-2992
@@ -79,16 +79,16 @@ int main(int argc, char *argv[]) {
 			char request[40];
 			memcpy(request,&action,sizeof(action));
 			memcpy(request+sizeof(action),&ID,sizeof(ID));
-
+			
 			int sent = send(s, request, 5, 0);
-				if (errno != 0) {
-					cout << "Send error: " << errno << endl;
-					perror("JOIN: ");
-				} else if (sent == 5) {
-					cout << "Join Successful" << endl;
-				} else {
-					cout << "Join Success, incorrect data sent" << endl;
-				}
+			if (errno != 0) {
+				cout << "Send error: " << errno << endl;
+				perror("JOIN: ");
+			// } else if (sent == 5) {
+			// 	cout << "Join Successful" << endl;
+			// } else {
+			// 	cout << "Join Success, incorrect data sent" << endl;
+			// }
 
 		} else if (choice == "PUBLISH") {
 			DIR* dir = opendir(sharedFileDir); // Open the directory containing the files to be published
