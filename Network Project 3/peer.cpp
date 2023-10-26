@@ -32,6 +32,12 @@
 
 using namespace std;
 
+// To be returned by Search function
+struct peerInfo {
+	int port = 0;
+	char* peerIP[INET_ADDRSTRLEN];
+}
+
 /*
  * Lookup a host IP address and connect to it using service. Arguments match the first two
  * arguments to getaddrinfo(3).
@@ -136,66 +142,20 @@ int main(int argc, char *argv[]) {
 			}
 
 		} else if (choice == "SEARCH") {
-			vector<char> searchRequest;
-			string fileName;
+			search(s, false);
+		} else if(choice == "FETCH") {
+			// Search request return host, port
+			// Search(s, true) function handles request and returns peerInfo struct containing port and peerIP[]
+			peerInfo peer = search(s, true);
 
-			cout << "Enter a file name: ";
-			cin  >> fileName;
+			// peer.port contains port #, peer.peerIP[] contains peer ip,
 
-			searchRequest.push_back(0x02); // Add action byte to "front" of request
-
-			for (char c : fileName) { // for c = first char in fileName to the last char,
-				searchRequest.push_back(c); // add the char to the back of the request
+			// host, port need to both be const char*, but port is an int, and peerIP is char* arr[]
+			if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
+				cout << "Connection to peer failed" << endl;
+				exit( 1 );
 			}
 
-			searchRequest.push_back(0x00);
-
-			char* sentData = searchRequest.data();
-			size_t sendSize = searchRequest.size();
-
-			errno = 0;
-			size_t sentSize = send(s, sentData, sendSize, 0);
-			if (errno != 0) {
-				cout << "Search send error: " << errno << endl;
-				perror("SEARCH: ");
-			}
-
-			if (sentSize != sendSize) {
-				cerr << "Sent size != intended send size, please assure data has sent properly" << endl;
-				cerr << "Sent size: " << sentSize << endl;
-				cerr << "Expected : " << sendSize << endl;
-			}
-			errno = 0;
-			recv(s, buf, sizeof(buf), 0);
-			if (errno != 0) {
-				cout << "Search receive error: " << errno << endl;
-				perror("SEARCH: ");
-			}
-
-			uint32_t peerID;
-			uint32_t peerIP;
-			uint16_t peerPort;
-			char pIP[INET_ADDRSTRLEN];  // char array of size IPV4 address
-			for (int i = 0; i < INET_ADDRSTRLEN; i++) {
-				pIP[i] = 0;
-			}
-			memcpy(&peerID, &buf[0], 4);
-			memcpy(&peerIP, &buf[4], 4);
-			memcpy(&peerPort, &buf[8], 2);
-			peerID = ntohl(peerID);
-			peerPort = ntohs(peerPort);
-			inet_ntop(AF_INET, &peerIP, pIP, INET_ADDRSTRLEN);
-
-			if ((peerID == 0) & (peerPort == 0)) {
-				cout << "File not indexed by registry" << endl;
-			} else {
-				cout << "file found at" << endl;
-				cout << " Peer " << peerID << endl << " ";
-				for(int i = 0; i < INET_ADDRSTRLEN; i++) {
-					cout << pIP[i];
-				}
-				cout <<  ":" << peerPort << endl;
-			}
 		} else {
 			cout << endl << "JOIN = Connect to P2P network" << endl << "PUBLISH = Push SharedFiles to registry" << endl;
 			cout << "SEARCH = Find a peer who has 'x' file" << endl << "EXIT = Shutdown connection" << endl << endl;
@@ -242,4 +202,80 @@ int lookup_and_connect( const char *host, const char *service ) {
 	freeaddrinfo( result );
 
 	return s;
+}
+
+int fetch(int s) {
+	return 0;
+}
+
+peerInfo search(int s, bool silent) {
+	peerInfo result;
+	vector<char> searchRequest;
+	string fileName;
+
+	cout << "Enter a file name: ";
+	cin  >> fileName;
+
+	searchRequest.push_back(0x02); // Add action byte to "front" of request
+
+	for (char c : fileName) { // for c = first char in fileName to the last char,
+		searchRequest.push_back(c); // add the char to the back of the request
+	}
+
+	searchRequest.push_back(0x00);
+
+	char* sentData = searchRequest.data();
+	size_t sendSize = searchRequest.size();
+
+	errno = 0;
+	size_t sentSize = send(s, sentData, sendSize, 0);
+	if (errno != 0) {
+		cout << "Search send error: " << errno << endl;
+		perror("SEARCH: ");
+	}
+
+	if (sentSize != sendSize) {
+		cerr << "Sent size != intended send size, please assure data has sent properly" << endl;
+		cerr << "Sent size: " << sentSize << endl;
+		cerr << "Expected : " << sendSize << endl;
+	}
+	errno = 0;
+	recv(s, buf, sizeof(buf), 0);
+	if (errno != 0) {
+		cout << "Search receive error: " << errno << endl;
+		perror("SEARCH: ");
+	}
+
+	uint32_t peerID;
+	uint32_t peerIP;
+	uint16_t peerPort;
+	char pIP[INET_ADDRSTRLEN];  // char array of size IPV4 address
+	for (int i = 0; i < INET_ADDRSTRLEN; i++) {
+		pIP[i] = 0;
+	}
+	memcpy(&peerID, &buf[0], 4);
+	memcpy(&peerIP, &buf[4], 4);
+	memcpy(&peerPort, &buf[8], 2);
+	peerID = ntohl(peerID);
+	peerPort = ntohs(peerPort);
+	inet_ntop(AF_INET, &peerIP, pIP, INET_ADDRSTRLEN);
+
+	if(silent == false) {
+		if ((peerID == 0) & (peerPort == 0)) {
+			cout << "File not indexed by registry" << endl;
+		} else {
+			cout << "file found at" << endl;
+			cout << " Peer " << peerID << endl << " ";
+			for(int i = 0; i < INET_ADDRSTRLEN; i++) {
+				cout << pIP[i];
+			}
+			cout <<  ":" << peerPort << endl;
+		}
+	} else {
+		result.port = peerPort;
+		for (int i = 0; i < INET_ADDRSTRLEN; i++) {
+			result.peerIP[i] = pIP[i];
+		}
+	}
+	return result;
 }
