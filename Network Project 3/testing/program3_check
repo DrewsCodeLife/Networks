@@ -1,18 +1,24 @@
 #!/usr/bin/env -S python3 -B
 
+import os
 import sys
 import random
 import common
 
 ################### Defined constants ##################################
+# Filenames the student peer should FETCH
+TXT_FILES = ['file1.txt', 'file2.txt', 'file3.txt']
+BIN_FILES = ['binary1.bin', 'binary2.bin', 'binary3.bin']
+FETCH_FILES = TXT_FILES+BIN_FILES
+
 # Filenames provided as part of the assignment and available while building
 # or executing. Should not be submitted to the script. Directories are
 # copied recursively.
-BASE_FILES = ['libnet_socket.a', 'net_socket.h']
+BASE_FILES = ['libnet_socket.a', 'net_socket.h'] + FETCH_FILES
 
 # Executable files provided as part of the assignment. Should not be
 # submitted to the script.
-BASE_EXECUTABLES = ['p2_registry']
+BASE_EXECUTABLES = ['p3_registry', 'p3_peer']
 
 # All executables that must be generated during compilation.
 REQD_EXECUTABLES = ['peer']
@@ -30,7 +36,11 @@ def main():
 
     STUDENT_DIR = 'student' # Directory for student executables and files
 
+    SOLN_PEER_DIR = 'peer' # Directory for solution peer and files
+
     NUM_PUBLISHED_FILES = random.randint(4, 9) # Number of files peer should PUBLISH
+
+    MAX_PEERS = 4 # Maximum number of solution peers to start
 
     # Only one executable
     student_exe = REQD_EXECUTABLES[0]
@@ -41,10 +51,10 @@ def main():
     # Random TCP port number
     port = common.get_random_port()
 
-    # The peer ID
     student_peer_id = common.get_random_id()
 
-    registry_exe = 'p2_registry'
+    registry_exe = 'p3_registry'
+    soln_peer_exe = 'p3_peer'
 
     published_files = common.random_files(NUM_PUBLISHED_FILES)
 
@@ -52,29 +62,51 @@ def main():
     nonindexed_file = files_to_search[0]
     files_to_search += random.sample(VIRTUAL_FILES1, random.randint(1, len(VIRTUAL_FILES1)))
     files_to_search += random.sample(VIRTUAL_FILES2, random.randint(1, len(VIRTUAL_FILES2)))
+    files_to_search += random.sample(FETCH_FILES, random.randint(1, len(FETCH_FILES)))
     random.shuffle(files_to_search)
 
+    files_to_download = FETCH_FILES
+    random.shuffle(TXT_FILES)
+    random.shuffle(BIN_FILES)
+
+    num_peers = random.randint(2, MAX_PEERS)
+    soln_peers = []
+
     try:
-        # Start the programs
-        common.banner('Starting registry and peer')
+        # Start the registry and student peer
+        common.banner('Starting registry and peers')
         reg = common.start_registry(registry_exe, port, REGISTRY_TIMEOUT, soln=True, do_debug=do_debug)
-        student_peer = common.start_peer(student_exe, host, port, student_peer_id, \
-		    STUDENT_DIR, published_files, SHARED_DIR, soln=False, do_debug=do_debug)
+        student_peer = common.start_peer(student_exe, host, port, student_peer_id, STUDENT_DIR, published_files, SHARED_DIR, soln=False, do_debug=do_debug)
         if do_debug:
             common.subbanner('WARNING: Debug output enabled. Program output may occur out of order.')
 
-        # Perform tests
+        # Start all the non-student peers
+        for _ in range(num_peers):
+            peer_id = common.get_random_id()
+            peer_dir = common.random_files(1)[0]
+            p = common.start_peer(soln_peer_exe, host, port, peer_id, peer_dir, files_to_download, SHARED_DIR, soln=True, do_debug=do_debug, copy=True)
+            rx_id, soln_ip, soln_port = common.soln_perform_register(reg, p, peer_id)
+            common.soln_perform_publish_to_soln(reg, p, files_to_download)
+            soln_peers.append((p, rx_id, soln_ip, soln_port, peer_dir))
+
+        # Perform Program 2 tests except EXIT
         common.student_perform_join(reg, student_peer, student_peer_id)
-
         common.student_perform_publish(reg, student_peer, published_files)
-
         for fname in files_to_search:
             indexed = True
             if fname == nonindexed_file:
                 indexed = False
             common.student_perform_search(reg, student_peer, fname, indexed)
 
+        # Perform tests new to Program 3
+        for fname in TXT_FILES:
+            common.student_perform_fetch(reg, student_peer, soln_peers, os.path.join(SHARED_DIR, fname), os.path.join(STUDENT_DIR, fname))
+        for fname in BIN_FILES:
+            common.student_perform_fetch(reg, student_peer, soln_peers, os.path.join(SHARED_DIR, fname), os.path.join(STUDENT_DIR, fname))
+
         common.student_perform_exit(reg, student_peer)
+        for p in soln_peers:
+            common.soln_perform_exit(reg, p[0])
 
     except common.TestError as err:
         common.perror(str(err))
