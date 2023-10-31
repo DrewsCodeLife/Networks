@@ -35,22 +35,18 @@ using namespace std;
 // To be returned by Search function
 struct peerInfo {
 	int port = 0;
-	char* peerIP[INET_ADDRSTRLEN];
-}
+	char peerIP[INET_ADDRSTRLEN];
+	string filename;
+};
 
-/*
- * Lookup a host IP address and connect to it using service. Arguments match the first two
- * arguments to getaddrinfo(3).
- *
- * Returns a connected socket descriptor or -1 on error. Caller is responsible for closing
- * the returned socket.
- */
 int lookup_and_connect( const char *host, const char *service );
+peerInfo search(int s, bool silent);
+const char* int_to_cstr(int integer, char port[]);
 
 int main(int argc, char *argv[]) {
 	int s;
+	int sock;
 	const char* sharedFileDir = "SharedFiles";
-	char buf[2048];
 	vector<string> fileNames;
 
 	if (argc < 4) {
@@ -132,7 +128,7 @@ int main(int argc, char *argv[]) {
 			size_t sentSize = send(s, sentData, sendSize, 0);
 			if (errno != 0) {
 				cout << "Publish error: " << errno << endl;
-				perror("JOIN: ");
+				perror("PUBLISH: ");
 			}
 
 			if (sentSize != sendSize) {
@@ -144,18 +140,77 @@ int main(int argc, char *argv[]) {
 		} else if (choice == "SEARCH") {
 			search(s, false);
 		} else if(choice == "FETCH") {
-			// Search request return host, port
-			// Search(s, true) function handles request and returns peerInfo struct containing port and peerIP[]
+			vector<char> fetchrequest;
+			// Search(s, true) function handles request and returns peerInfo struct containing:
+			//													  port, peerIP[], and filename
 			peerInfo peer = search(s, true);
-
+			char filename[sizeof(peer.filename)];
+			strncpy(filename, peer.filename.c_str(), sizeof(filename));
 			// peer.port contains port #, peer.peerIP[] contains peer ip,
 
-			// host, port need to both be const char*, but port is an int, and peerIP is char* arr[]
-			if ( ( s = lookup_and_connect( host, port ) ) < 0 ) {
+			char pport[sizeof(int)];
+			int_to_cstr(peer.port, pport);
+			if ( ( sock = lookup_and_connect( peer.peerIP, as_const(pport) ) )< 0 ) {
 				cout << "Connection to peer failed" << endl;
 				exit( 1 );
 			}
 
+			ofstream file(peer.filename, std::ios::binary);
+
+			if(!file.is_open()) {
+				cerr << "Fetch failed to open file for save." << endl;
+				exit(1);
+			}
+
+			// If lookup_and_connect successfully connected, then sock now contains an open socket with peer
+			fetchrequest.push_back(0x03);
+			for(size_t i = 0; i < peer.filename.length(); i++) {
+				fetchrequest.push_back(filename[i]);
+			}
+
+			char* sentData = fetchrequest.data();
+			size_t sendSize = fetchrequest.size();
+
+			errno = 0;
+			size_t sentSize = send(sock, sentData, sentSize, 0);
+			if (errno != 0) {
+				cout << "FETCH error: " << errno << endl;
+				perror("FETCH: ");
+			}
+			if (sentSize != sendSize) {
+				cerr << "Sent size != Intended send size, please assure data has sent properly" << endl;
+				cerr << "Sent size: " << sentSize << endl;
+				cerr << "Expected : " << sendSize << endl;
+			}
+
+			int bytesRead;
+			int responseCode;
+			char buf[1024];
+			bytesRead = recv(sock, &responseCode, 1, 0);
+			responseCode = ntohl(responseCode);
+			if(responseCode == 0) {
+				while (true) {
+					// loop until bytesRead = 0, first loop bytesRead = 1
+					errno = 0;
+					bytesRead = recv(sock, buf, sizeof(buf), 0);
+					if (errno != 0) {
+						cerr << "Error receiving FETCH response" << endl;
+						perror("FETCH response: ");
+						break;
+					}
+
+					if (bytesRead == 0) {
+						break;
+					}
+
+					file.write(buf, bytesRead);
+				}
+			} else {
+				cout << "Received error response from peer" << endl;
+			}
+
+			file.close();
+			close(sock);
 		} else {
 			cout << endl << "JOIN = Connect to P2P network" << endl << "PUBLISH = Push SharedFiles to registry" << endl;
 			cout << "SEARCH = Find a peer who has 'x' file" << endl << "EXIT = Shutdown connection" << endl << endl;
@@ -209,12 +264,14 @@ int fetch(int s) {
 }
 
 peerInfo search(int s, bool silent) {
+	char buf[2048];
 	peerInfo result;
 	vector<char> searchRequest;
 	string fileName;
 
 	cout << "Enter a file name: ";
 	cin  >> fileName;
+	result.filename = fileName;
 
 	searchRequest.push_back(0x02); // Add action byte to "front" of request
 
@@ -278,4 +335,9 @@ peerInfo search(int s, bool silent) {
 		}
 	}
 	return result;
+}
+
+const char* int_to_cstr(int integer, char port[]) {
+	sprintf(port, "%d", integer);
+	return port;
 }
