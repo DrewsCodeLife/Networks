@@ -148,6 +148,10 @@ int main(int argc, char *argv[]) {
 			strncpy(filename, peer.filename.c_str(), sizeof(filename));
 			// peer.port contains port #, peer.peerIP[] contains peer ip,
 
+			if(!peer.filename.empty() && peer.filename.back() != '\0') {
+				peer.filename.append("\0");
+			}
+
 			char pport[5];
 			int_to_cstr(peer.port, pport);
 			if ( ( sock = lookup_and_connect( peer.peerIP, as_const(pport) ) ) < 0 ) {
@@ -170,6 +174,12 @@ int main(int argc, char *argv[]) {
 
 			char* sentData = fetchrequest.data();
 			size_t sendSize = fetchrequest.size();
+
+			cout << "Fetch request: ";
+			for(char c : fetchrequest) {
+				cout << c;
+			}
+			cout << endl;
 
 			errno = 0;
 			size_t sentSize = send(sock, sentData, sentSize, 0);
