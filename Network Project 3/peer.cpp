@@ -140,6 +140,8 @@ int main(int argc, char *argv[]) {
 		} else if (choice == "SEARCH") {
 			search(s, false);
 		} else if(choice == "FETCH") {
+			int responseCode;
+			int bytesRead;
 			vector<char> fetchrequest;
 			// Search(s, true) function handles request and returns peerInfo struct containing:
 			//													  port, peerIP[], and filename
@@ -175,16 +177,23 @@ int main(int argc, char *argv[]) {
 			char* sentData = fetchrequest.data();
 			size_t sendSize = fetchrequest.size();
 
-			cout << "Fetch request: ";
+			cout << "Fetch request size: " << fetchrequest.size() << endl;
+			cout << "Data: ";
 			for(char c : fetchrequest) {
 				cout << c;
 			}
 			cout << endl;
 
 			errno = 0;
-			size_t sentSize = send(sock, sentData, sentSize, 0);
+			size_t sentSize = send(sock, sentData, sendSize, 0);
 			if (errno != 0) {
-				cout << "FETCH error: " << errno << endl;
+				cout << "FETCH send error: " << errno << endl;
+				perror("FETCH: ");
+			}
+			bytesRead = recv(sock, &responseCode, 1, 0);
+			cout << "Response Code: " << responseCode << endl;
+			if(errno != 0) {
+				cout << "FETCH recv error: " << errno << endl;
 				perror("FETCH: ");
 			}
 			if (sentSize != sendSize) {
@@ -193,10 +202,9 @@ int main(int argc, char *argv[]) {
 				cerr << "Expected : " << sendSize << endl;
 			}
 
-			int bytesRead;
-			int responseCode;
+			
 			char buf[1024];
-			bytesRead = recv(sock, &responseCode, 1, 0);
+			
 			responseCode = ntohl(responseCode);
 			if(responseCode == 0) {
 				while (true) {
