@@ -277,10 +277,6 @@ int lookup_and_connect( const char *host, const char *service ) {
 	return s;
 }
 
-int fetch(int s) {
-	return 0;
-}
-
 peerInfo search(int s, bool silent) {
 	char buf[2048];
 	peerInfo result;
