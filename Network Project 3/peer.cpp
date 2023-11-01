@@ -148,9 +148,9 @@ int main(int argc, char *argv[]) {
 			strncpy(filename, peer.filename.c_str(), sizeof(filename));
 			// peer.port contains port #, peer.peerIP[] contains peer ip,
 
-			char pport[sizeof(int)];
+			char pport[5];
 			int_to_cstr(peer.port, pport);
-			if ( ( sock = lookup_and_connect( peer.peerIP, as_const(pport) ) )< 0 ) {
+			if ( ( sock = lookup_and_connect( peer.peerIP, as_const(pport) ) ) < 0 ) {
 				cout << "Connection to peer failed" << endl;
 				exit( 1 );
 			}
@@ -164,8 +164,8 @@ int main(int argc, char *argv[]) {
 
 			// If lookup_and_connect successfully connected, then sock now contains an open socket with peer
 			fetchrequest.push_back(0x03);
-			for(size_t i = 0; i < peer.filename.length(); i++) {
-				fetchrequest.push_back(filename[i]);
+			for(char currentChar : peer.filename) {
+				fetchrequest.push_back(currentChar);
 			}
 
 			char* sentData = fetchrequest.data();
