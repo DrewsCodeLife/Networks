@@ -175,21 +175,10 @@ int main(int argc, char *argv[]) {
 			char* sentData = fetchrequest.data();
 			size_t sendSize = fetchrequest.size();
 
-			cout << "Fetch request size: " << fetchrequest.size() << endl;
-			cout << "Data: ";
-			for(int i : fetchrequest) {
-				cout << "0x" << std::hex << std::setw(2) << std::setfill('0')<< i << " ";
-			}
-			cout << endl;
-
 			errno = 0;
 			size_t sentSize = send(sock, sentData, sendSize, 0);
 			if (errno != 0) {
 				cout << "FETCH send error: " << errno << endl;
-				perror("FETCH: ");
-			}
-			if(errno != 0) {
-				cout << "FETCH recv error: " << errno << endl;
 				perror("FETCH: ");
 			}
 			if (sentSize != sendSize) {
@@ -198,10 +187,12 @@ int main(int argc, char *argv[]) {
 				cerr << "Expected : " << sendSize << endl;
 			}
 
-			cout << "FETCH SEND SUCCESS" << endl;
-
+			errno = 0;
 			bytesRead = recv(sock, &responseCode, 1, 0);
-			cout << "Response Code: " << responseCode << "Bytes read: " << bytesRead << endl;
+			if(errno != 0) {
+				cout << "FETCH recv error: " << errno << endl;
+				perror("FETCH: ");
+			}
 
 			char buf[1024];
 			responseCode = ntohs(responseCode);
