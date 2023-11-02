@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
 		} else if (choice == "SEARCH") {
 			search(s, false);
 		} else if(choice == "FETCH") {
-			int responseCode = 6969;
+			short int responseCode = 0;
 			int bytesRead;
 			vector<char> fetchrequest;
 			// Search(s, true) function handles request and returns peerInfo struct containing:
@@ -201,10 +201,10 @@ int main(int argc, char *argv[]) {
 			cout << "FETCH SEND SUCCESS" << endl;
 
 			bytesRead = recv(sock, &responseCode, 1, 0);
-			cout << "Response Code: " << responseCode << endl;
+			cout << "Response Code: " << responseCode << "Bytes read: " << bytesRead << endl;
 
 			char buf[1024];
-			responseCode = ntohl(responseCode);
+			responseCode = ntohs(responseCode);
 			if(responseCode == 0) {
 				while (true) {
 					// loop until bytesRead = 0, first loop bytesRead = 1
