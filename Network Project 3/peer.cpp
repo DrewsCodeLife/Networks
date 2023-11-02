@@ -29,6 +29,7 @@
 #include <bits/stdc++.h>
 #include <fstream>
 #include <dirent.h>
+#include <iomanip>
 
 using namespace std;
 
@@ -140,7 +141,7 @@ int main(int argc, char *argv[]) {
 		} else if (choice == "SEARCH") {
 			search(s, false);
 		} else if(choice == "FETCH") {
-			int responseCode;
+			int responseCode = 6969;
 			int bytesRead;
 			vector<char> fetchrequest;
 			// Search(s, true) function handles request and returns peerInfo struct containing:
@@ -149,10 +150,6 @@ int main(int argc, char *argv[]) {
 			char filename[sizeof(peer.filename)];
 			strncpy(filename, peer.filename.c_str(), sizeof(filename));
 			// peer.port contains port #, peer.peerIP[] contains peer ip,
-
-			if(!peer.filename.empty() && peer.filename.back() != '\0') {
-				peer.filename.append("\0");
-			}
 
 			char pport[5];
 			int_to_cstr(peer.port, pport);
@@ -173,14 +170,15 @@ int main(int argc, char *argv[]) {
 			for(char currentChar : peer.filename) {
 				fetchrequest.push_back(currentChar);
 			}
+			fetchrequest.push_back(0x00);
 
 			char* sentData = fetchrequest.data();
 			size_t sendSize = fetchrequest.size();
 
 			cout << "Fetch request size: " << fetchrequest.size() << endl;
 			cout << "Data: ";
-			for(char c : fetchrequest) {
-				cout << c;
+			for(int i : fetchrequest) {
+				cout << "0x" << std::hex << std::setw(2) << std::setfill('0')<< i << " ";
 			}
 			cout << endl;
 
@@ -190,8 +188,6 @@ int main(int argc, char *argv[]) {
 				cout << "FETCH send error: " << errno << endl;
 				perror("FETCH: ");
 			}
-			bytesRead = recv(sock, &responseCode, 1, 0);
-			cout << "Response Code: " << responseCode << endl;
 			if(errno != 0) {
 				cout << "FETCH recv error: " << errno << endl;
 				perror("FETCH: ");
@@ -202,9 +198,12 @@ int main(int argc, char *argv[]) {
 				cerr << "Expected : " << sendSize << endl;
 			}
 
-			
+			cout << "FETCH SEND SUCCESS" << endl;
+
+			bytesRead = recv(sock, &responseCode, 1, 0);
+			cout << "Response Code: " << responseCode << endl;
+
 			char buf[1024];
-			
 			responseCode = ntohl(responseCode);
 			if(responseCode == 0) {
 				while (true) {
