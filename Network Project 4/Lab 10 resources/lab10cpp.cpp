@@ -50,9 +50,7 @@ int main(void){
 	while(1) {
         char buf[64596];
 		call_set = all_sockets;
-        cout << "Before" << endl;
 		int num_s = select(max_socket+1, &call_set, NULL, NULL, NULL);
-        cout << "AFTER" << endl;
 		if( num_s < 0 ){
 			perror("ERROR in select() call");
 			return -1;
