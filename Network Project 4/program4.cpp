@@ -23,6 +23,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -120,9 +121,7 @@ int main(int argc, char *argv[]) {
 				int received = 0;
 
 				received = recv(s, buf, 1, 0);
-				cout << "received: " << received << endl;
 				int action = static_cast<int>(buf[0]);
-				cout << "Action bit: " << action << endl;
 
 				if (received == 0) { // Peer disconnected
 					FD_CLR(s, &all_socks);
@@ -131,15 +130,26 @@ int main(int argc, char *argv[]) {
 				} else if (action == 0) {
 					uint32_t tempID = 0;
 					int ret = recv(s, &tempID, 4, 0);
-					cout << "ret: " << ret << endl;
 					if (ret == 0) {
 						cout << "JOIN recv() FAILURE" << endl;
 						return -1;
 					}
 					connections[s + 3].ID = ntohl(tempID);
-					cout << connections[s + 3].ID << endl;
 				} else if(action == 1) {
 					// PUBLISH command
+					uint32_t count = 0;
+					int ret = 0;
+					
+					if ((ret = recv(s, &count, 4, 0)) < 0) {
+						cout << "Publish file count recv error" << endl;
+						return -1;
+					}
+
+					if ((ret = recv(s, buf, 1000, 0)) < 0) {
+						cout << "Publish file names recv error" << endl;
+					}
+
+					cout << "buf      : " << buf << endl;
 				} else if (action == 2) {
 					// SEARCH command
 				}
