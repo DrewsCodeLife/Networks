@@ -109,7 +109,6 @@ int main(int argc, char *argv[]) {
 					return -1;
 				}
 				connections[new_s + 3].address = addr;
-				cout << addr.sin_addr.s_addr << endl;
 				if(inet_ntop(AF_INET, &connections[new_s + 3].address.sin_addr.s_addr, connections[new_s + 3].buffer, INET_ADDRSTRLEN) == NULL) {
 					perror("Issue with inet_ntop()");
 					return -1;
@@ -121,20 +120,30 @@ int main(int argc, char *argv[]) {
 				int received = 0;
 
 				received = recv(s, buf, 1, 0);
+				cout << "received: " << received << endl;
 				int action = static_cast<int>(buf[0]);
+				cout << "Action bit: " << action << endl;
 
 				if (received == 0) { // Peer disconnected
 					FD_CLR(s, &all_socks);
 					close(s);
 					cout << "[DELETE] Socket " << s << " successfully closed" << endl;
 				} else if (action == 0) {
-					// JOIN command
+					uint32_t tempID = 0;
+					int ret = recv(s, &tempID, 4, 0);
+					cout << "ret: " << ret << endl;
+					if (ret == 0) {
+						cout << "JOIN recv() FAILURE" << endl;
+						return -1;
+					}
+					connections[s + 3].ID = ntohl(tempID);
+					cout << connections[s + 3].ID << endl;
 				} else if(action == 1) {
 					// PUBLISH command
 				} else if (action == 2) {
 					// SEARCH command
 				}
-
+				cout << "Loop ran" << endl;
 				// IF PEER DISCONNECTED, HANDLE GRACEFULLY
             }
         }
