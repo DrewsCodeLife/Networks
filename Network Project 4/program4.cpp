@@ -115,8 +115,6 @@ int main(int argc, char *argv[]) {
 					return -1;
 				}
 
-				cout << "[DELETE] New peer connected on socket " << new_s << endl;
-				printf("[DELETE] With IP and port: %s\n", connections[new_s + 3].buffer);
             } else { // pre-connected peer requesting something
 				int received = 0;
 
@@ -126,8 +124,7 @@ int main(int argc, char *argv[]) {
 				if (received == 0) { // Peer disconnected
 					FD_CLR(s, &all_socks);
 					close(s);
-					cout << "[DELETE] Socket " << s << " successfully closed" << endl;
-				} else if (action == 0) {
+				} else if (action == 0) { // Join
 					uint32_t tempID = 0;
 					int ret = recv(s, &tempID, 4, 0);
 					if (ret == 0) {
@@ -135,33 +132,19 @@ int main(int argc, char *argv[]) {
 						return -1;
 					}
 					connections[s + 3].ID = ntohl(tempID);
-				} else if(action == 1) {
-					// PUBLISH command
+					cout << "TEST] JOIN " << connections[s+3].ID << endl;
+				} else if(action == 1) { // Publish
 					uint32_t count = 0;
 					int ret = 0;
-					cout << "Publish received" << endl;
 					
 					if ((ret = recv(s, &count, 4, 0)) < 0) {
 						cout << "Publish file count recv error" << endl;
 						return -1;
 					}
+					count = ntohl(count);
 
 					if ((ret = recv(s, buf, 1200, 0)) < 0) {
 						cout << "Publish file names recv error" << endl;
-					}
-
-					count = ntohl(count);
-					cout << "Count    : " << count << endl;
-					// cout << "Buf      : " << buf << endl;
-					for (int i = 0; i < 1200; i++) {
-						if(buf[i] == '\0') {
-							if(buf[i] == '\0' && buf[i-1] == '\0') {
-								break;
-							}
-							cout << endl;
-						}
-
-						cout << buf[i];
 					}
 
 					int j = 0;
@@ -179,9 +162,11 @@ int main(int argc, char *argv[]) {
 						}
 					}
 
+					cout << "TEST] PUBLISH " << count << " ";
 					for(n = 0; n < 10; n++) {
-						cout << connections[s+3].files[n] << endl;
+						cout << connections[s+3].files[n] << " ";
 					}
+					cout << endl;
 				} else if (action == 2) {
 					// SEARCH command
 					// Receive file name
