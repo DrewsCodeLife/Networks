@@ -31,7 +31,7 @@ using namespace std;
 
 struct peerinfo {
     uint32_t ID;
-    int fd; // Socket descriptor
+    int fd = -1; // Socket descriptor
     char files[10][101];
     struct sockaddr_in address;
 	char buffer[INET_ADDRSTRLEN];
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     int max_sock = listen_sock;
 
     while(1) {
-        char buf[8192];
+		char buf[8192];
         call_socks = all_socks;
         int new_s = select(max_sock + 1, &call_socks, NULL, NULL, NULL);
         if (new_s < 0) {
@@ -109,11 +109,8 @@ int main(int argc, char *argv[]) {
 					perror("Error receiving peer connection data");
 					return -1;
 				}
-				connections[new_s + 3].address = addr;
-				if(inet_ntop(AF_INET, &connections[new_s + 3].address.sin_addr.s_addr, connections[new_s + 3].buffer, INET_ADDRSTRLEN) == NULL) {
-					perror("Issue with inet_ntop()");
-					return -1;
-				}
+				connections[new_s + 3].address.sin_addr.s_addr = ntohl(addr.sin_addr.s_addr);
+				connections[new_s + 3].address.sin_port = ntohs(addr.sin_port);
 
             } else { // pre-connected peer requesting something
 				int received = 0;
@@ -168,15 +165,57 @@ int main(int argc, char *argv[]) {
 					}
 					cout << endl;
 				} else if (action == 2) {
+					char buffy[100];
 					// SEARCH command
 					// Receive file name
 					// loop through all connections[x + 3] and strcmp(connections[x+3].files[i], 'file name')
 					// When strcmp returns 0, we've found our match, simply package and send() data to
 					//		requesting peer.
+					if ((received = recv(s, &buffy, 100, 0)) < 0) {
+						perror("Search receive error");
+						return -1;
+					}
+
+					bool correct = false;
+					int n;
+					for (n = 0; n < 65537; n++) {
+						if (connections[n].fd != -1) {
+							for (int i = 0; i < 10; i++) {
+								if (strcmp(connections[n].files[i],buffy) == 0) {
+									correct = true;
+								}
+								if (correct == true) {
+									break;
+								}
+							}
+							if (correct == true) {
+								break;
+							}
+							cout << n << endl;
+						}
+					}
+					if (correct == true) {
+						vector<char> peer;
+						peer.push_back(htonl(connections[n].ID));
+						peer.push_back(htonl(connections[n].address.sin_addr.s_addr));
+						peer.push_back(htons(connections[n].address.sin_port));
+						cout << connections[n].ID << endl << connections[n].address.sin_addr.s_addr << ":" << endl;
+						cout << connections[n].address.sin_port << endl;
+
+						char* sendData = peer.data();
+						int sendSize = sizeof(peer);
+						if ((received = send(s, sendData, sendSize, 0)) < 0) {
+							perror("Search response fail");
+							return -1;
+						}
+						cout << "Sent " << received << " bytes" << endl;
+					} else {
+						// Send all zero's
+					}
+					}
 				}
             }
         }
-    }
 
     return 0;
 }
