@@ -178,6 +178,10 @@ int main(int argc, char *argv[]) {
 							break;
 						}
 					}
+
+					for(n = 0; n < 10; n++) {
+						cout << connections[s+3].files[n] << endl;
+					}
 				} else if (action == 2) {
 					// SEARCH command
 					// Receive file name
