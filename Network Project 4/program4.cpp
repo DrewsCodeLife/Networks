@@ -139,22 +139,52 @@ int main(int argc, char *argv[]) {
 					// PUBLISH command
 					uint32_t count = 0;
 					int ret = 0;
+					cout << "Publish received" << endl;
 					
 					if ((ret = recv(s, &count, 4, 0)) < 0) {
 						cout << "Publish file count recv error" << endl;
 						return -1;
 					}
 
-					if ((ret = recv(s, buf, 1000, 0)) < 0) {
+					if ((ret = recv(s, buf, 1200, 0)) < 0) {
 						cout << "Publish file names recv error" << endl;
 					}
 
-					cout << "buf      : " << buf << endl;
+					count = ntohl(count);
+					cout << "Count    : " << count << endl;
+					// cout << "Buf      : " << buf << endl;
+					for (int i = 0; i < 1200; i++) {
+						if(buf[i] == '\0') {
+							if(buf[i] == '\0' && buf[i-1] == '\0') {
+								break;
+							}
+							cout << endl;
+						}
+
+						cout << buf[i];
+					}
+
+					int j = 0;
+					int n = 0;
+					for(int i = 0; i<10;i++) {
+						for(j=0; buf[n] != '\0'; j++) {
+							connections[s + 3].files[i][j] = buf[n];
+							n++;
+						}
+						connections[s + 3].files[i][j] = buf[n];
+						n++;
+
+						if(buf[n] == '\0' && buf[n-1] == '\0') { // Should only be true once if count < 10
+							break;
+						}
+					}
 				} else if (action == 2) {
 					// SEARCH command
+					// Receive file name
+					// loop through all connections[x + 3] and strcmp(connections[x+3].files[i], 'file name')
+					// When strcmp returns 0, we've found our match, simply package and send() data to
+					//		requesting peer.
 				}
-				cout << "Loop ran" << endl;
-				// IF PEER DISCONNECTED, HANDLE GRACEFULLY
             }
         }
     }
