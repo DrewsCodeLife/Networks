@@ -196,14 +196,21 @@ int main(int argc, char *argv[]) {
 					}
 					if (correct == true) {
 						vector<char> peer;
-						peer.push_back(htonl(connections[n].ID));
-						peer.push_back(htonl(connections[n].address.sin_addr.s_addr));
-						peer.push_back(htons(connections[n].address.sin_port));
-						cout << connections[n].ID << endl << connections[n].address.sin_addr.s_addr << ":" << endl;
+						unsigned char id = htonl(&connections[n].ID);
+						unsigned char addr = htonl(&connections[n].address.sin_addr.s_addr);
+						unsigned char pt = htons(&connections[n].address.sin_port);
+						peer.push_back(id);
+						peer.push_back(addr);
+						peer.push_back(pt);
+						cout << "Pre htonl" << endl;
+						cout << connections[n].ID << endl << connections[n].address.sin_addr.s_addr << ":";
 						cout << connections[n].address.sin_port << endl;
+						
+						cout << endl << "Post htonl" << endl;
+						cout << id << endl << addr << ":" << pt << endl;
 
 						char* sendData = peer.data();
-						int sendSize = sizeof(peer);
+						int sendSize = peer.size();
 						if ((received = send(s, sendData, sendSize, 0)) < 0) {
 							perror("Search response fail");
 							return -1;
