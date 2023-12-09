@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+	int ret = 0;
     fd_set all_socks;   // Instantiate set of socket file descriptors to track all active sockets
     FD_ZERO(&all_socks); // Define set as empty
     fd_set call_socks;  // Call set will temporarily hold sockets for select(). Tracks status of sockets.
@@ -98,7 +99,18 @@ int main(int argc, char *argv[]) {
 
             if (s == listen_sock) { // New peer connecting
 				int new_s = accept(s, NULL, NULL);
+				if(new_s <= -1) {
+					perror("Error in accept");
+					return -1;
+				}
+				
+				errno = 0;
 				FD_SET(new_s, &all_socks);
+				if(errno != 0) {
+					perror("Error in FD_SET");
+					return -1;
+				}
+				
 				max_sock = find_max_fd(&all_socks);
 
 				connections[new_s + 3].fd = new_s;
@@ -116,6 +128,10 @@ int main(int argc, char *argv[]) {
 				int received = 0;
 
 				received = recv(s, buf, 1, 0);
+				if(received <= -1) {
+					perror("Error in initial recv()");
+					return -1;
+				}
 				int action = static_cast<int>(buf[0]);
 
 				if (received == 0) { // Peer disconnected
@@ -123,7 +139,7 @@ int main(int argc, char *argv[]) {
 					close(s);
 				} else if (action == 0) { // Join
 					uint32_t tempID = 0;
-					int ret = recv(s, &tempID, 4, 0);
+					ret = recv(s, &tempID, 4, 0);
 					if (ret == 0) {
 						cout << "JOIN recv() FAILURE" << endl;
 						return -1;
@@ -191,33 +207,41 @@ int main(int argc, char *argv[]) {
 							if (correct == true) {
 								break;
 							}
-							cout << n << endl;
 						}
 					}
-					if (correct == true) {
-						vector<char> peer;
-						unsigned char id = htonl(&connections[n].ID);
-						unsigned char addr = htonl(&connections[n].address.sin_addr.s_addr);
-						unsigned char pt = htons(&connections[n].address.sin_port);
-						peer.push_back(id);
-						peer.push_back(addr);
-						peer.push_back(pt);
-						cout << "Pre htonl" << endl;
-						cout << connections[n].ID << endl << connections[n].address.sin_addr.s_addr << ":";
-						cout << connections[n].address.sin_port << endl;
-						
-						cout << endl << "Post htonl" << endl;
-						cout << id << endl << addr << ":" << pt << endl;
 
-						char* sendData = peer.data();
-						int sendSize = peer.size();
-						if ((received = send(s, sendData, sendSize, 0)) < 0) {
-							perror("Search response fail");
+					if (correct == true) {
+						unsigned char buffer[80];
+						uint32_t id = htonl(connections[n].ID);
+						uint32_t addr = htonl(connections[n].address.sin_addr.s_addr);
+						uint16_t pt = htons(connections[n].address.sin_port);
+
+						memcpy(buffer,&id,sizeof(id));
+						memcpy(buffer+sizeof(id),&addr,sizeof(addr));
+						memcpy(buffer+sizeof(id)+sizeof(addr),&pt,sizeof(pt));
+
+						if ((received = send(s, buffer, 10, 0)) < 0) {
+						 	perror("Search response fail");
+						 	return -1;
+						 }
+						 char ipstr[16];
+						 inet_ntop(AF_INET, &addr, ipstr, INET_ADDRSTRLEN);
+						 cout << "TEST] SEARCH " << buffy << " " << connections[n].ID << " ";
+						 for (uint32_t i = 0; i < INET_ADDRSTRLEN; i++) {
+							cout << ipstr[i];
+						 }
+						 cout << ":" << connections[n].address.sin_port << endl;
+					} else { // FILE NOT FOUND
+						cout << "TEST] SEARCH " << buffy << " 0 0.0.0.0:0" << endl;
+						char bufles[10];
+						for (int i = 0; i < 10; i++) {
+							bufles[i] = 0; // Reaffirm all zeros
+						}
+						int sent = send(s, &bufles, 10, 0);
+						if (sent < 0) {
+							perror("Issue with not-found response");
 							return -1;
 						}
-						cout << "Sent " << received << " bytes" << endl;
-					} else {
-						// Send all zero's
 					}
 					}
 				}
